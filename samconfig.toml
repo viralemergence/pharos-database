@@ -1,0 +1,9 @@
+version = 0.1
+[prod.deploy.parameters]
+stack_name = "pharos-database"
+resolve_s3 = true
+s3_prefix = "pharos-database"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "RDSName=\"RDS\" ProxyName=\"Proxy\" RDSProxyPolicyName=\"proxy-policy\" Port=\"5432\" RDSInstancePolicyName=\"rds-policy\" DevExportBucket=\"pharos-database-export-bucket\""
+image_repositories = []

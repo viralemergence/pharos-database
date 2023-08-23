@@ -1,0 +1,301 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for the primary shared resources
+  between prod and dev pharos deployments, including
+  igw, nat, rds, vpc and proxy configuration.
+
+Parameters:
+  RDSName:
+    Type: String
+    Default: RDS
+  ProxyName:
+    Type: String
+    Default: Proxy
+  RDSProxyPolicyName:
+    Type: String
+    Default: proxy-policy
+  Port:
+    Type: String
+    Default: "5432"
+  RDSInstancePolicyName:
+    Type: String
+    Default: rds-policy
+
+  # PHAROS Config
+  DevExportBucket:
+    Type: String
+    Default: pharos-database-export-bucket
+
+Resources:
+  VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGW
+
+  # NatSubnet:
+  #   Type: "AWS::EC2::Subnet"
+  #   Properties:
+  #     AvailabilityZone: !Select
+  #       - 0
+  #       - !GetAZs
+  #         Ref: "AWS::Region"
+  #     VpcId: !Ref VPC
+  #     CidrBlock: "172.31.0.0/16"
+
+  # NatGateway:
+  #   Type: AWS::EC2::NatGateway
+  #   Properties:
+  #     ConnectivityType: public
+  #     AllocationId: !GetAtt NatGatewayElasticIP.AllocationId
+  #     SubnetId: !Ref NatSubnet
+
+  PublicSubnetA:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/20
+      MapPublicIpOnLaunch: True
+
+  PublicSubnetB:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.16.0/20
+      MapPublicIpOnLaunch: True
+
+  # SubnetC:
+  #   Type: "AWS::EC2::Subnet"
+  #   Properties:
+  #     AvailabilityZone: !Select
+  #       - 1
+  #       - !GetAZs
+  #         Ref: "AWS::Region"
+  #     VpcId: !Ref VPC
+  #     CidrBlock: 10.0.32.0/20
+
+  RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnetA
+
+  PublicSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnetB
+
+  InternetRouteRule:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+  # NatRouteTable:
+  #   Type: "AWS::EC2::RouteTable"
+  #   Properties:
+  #     VpcId: !Ref VPC
+
+  # NatRoute:
+  #   Type: AWS::EC2::Route
+  #   DependsOn: NatGateway
+  #   Properties:
+  #     RouteTableId: !Ref NatRouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     NatGatewayId: !Ref NatGateway
+
+  # DefaultPrivateRoute:
+  #   Type: AWS::EC2::Route
+  #   Properties:
+  #     RouteTableId: !Ref RouteTable
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !GetAtt IGW.InternetGatewayId
+
+  # PublicSubnetARouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref RouteTable
+  #     SubnetId: !Ref PublicSubnetA
+
+  # PublicSubnetBRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref RouteTable
+  #     SubnetId: !Ref PublicSubnetB
+
+  # SubnetCRouteTableAssociation:
+  #   Type: "AWS::EC2::SubnetRouteTableAssociation"
+  #   Properties:
+  #     RouteTableId: !Ref NatRouteTable
+  #     SubnetId: !Ref SubnetC
+
+  SubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Join ["-", [!Ref AWS::StackName, "SubnetGroup"]]
+      DBSubnetGroupDescription: "Subnet Group"
+      SubnetIds:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+
+  InstanceSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: !Join ["-", [!Ref AWS::StackName, "SecurityGroup"]]
+      GroupDescription: "RDS traffic"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref Port
+          ToPort: !Ref Port
+          CidrIp: 24.152.81.32/32
+          Description: "WRZ Doce Vale"
+
+  DBAdminSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Join ["-", [!Ref AWS::StackName, DBAdminSecret]]
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "dbadmin"}'
+        GenerateStringKey: "password"
+        PasswordLength: 30
+        ExcludeCharacters: '"@/\'
+
+  RDSInstance:
+    Type: AWS::RDS::DBInstance
+    DependsOn: DBAdminSecret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      PubliclyAccessible: True
+      AllocatedStorage: "20"
+      AssociatedRoles:
+        - FeatureName: s3Export
+          RoleArn: !GetAtt RDSInstanceRole.Arn
+      DBInstanceClass: db.t3.micro
+      DBSubnetGroupName: !Ref "SubnetGroup"
+      DBInstanceIdentifier: !Join ["-", [!Ref AWS::StackName, !Ref RDSName]]
+      Engine: postgres
+      EngineVersion: "15"
+      AllowMajorVersionUpgrade: True
+      MasterUsername:
+        Fn::Sub: "{{resolve:secretsmanager:${DBAdminSecret}::username}}"
+      MasterUserPassword:
+        Fn::Sub: "{{resolve:secretsmanager:${DBAdminSecret}::password}}"
+      VPCSecurityGroups:
+        - !Ref InstanceSecurityGroup
+
+  SecretRDSAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId:
+        Ref: DBAdminSecret
+      TargetId:
+        Ref: RDSInstance
+      TargetType: AWS::RDS::DBInstance
+
+  RDSInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - rds.amazonaws.com
+      Policies:
+        - PolicyName:
+            !Join ["-", [!Ref AWS::StackName, !Ref RDSInstancePolicyName]]
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - S3:PutObject
+                Resource: # TODO change to dev, staging, review, prod
+                  # PHAROS config
+                  - !Sub arn:aws:s3:::${DevExportBucket}/*
+
+Outputs:
+  RDSInstance:
+    Description: RDS instance name
+    Value: !Ref RDSInstance
+    Export:
+      Name: !Sub ${AWS::StackName}-RDSInstance
+  RDSEndpoint:
+    Description: RDS endpoint or host
+    Value: !GetAtt [RDSInstance, Endpoint.Address]
+    Export:
+      Name: !Sub ${AWS::StackName}-RDSEndpoint
+  RDSPort:
+    Description: RDS port
+    Value: !GetAtt [RDSInstance, Endpoint.Port]
+    Export:
+      Name: !Sub ${AWS::StackName}-Port
+  # RDSProxy:
+  #   Description: Proxy
+  #   Value: !GetAtt RDSProxy.DBProxyArn
+  #   Export:
+  #     Name: !Sub ${AWS::StackName}-RDSProxyArn
+  # RDSProxyEndpoint:
+  #   Description: Proxy endpoint
+  #   Value: !GetAtt RDSProxy.Endpoint
+  #   Export:
+  #     Name: !Sub ${AWS::StackName}-RDSProxyEndpoint
+  VPCInstance:
+    Description: VPC for RDS and proxy
+    Value: !Ref VPC
+    Export:
+      Name: !Sub ${AWS::StackName}-VPCInstance
+  VPCSecurityGroup:
+    Description: Security group associated with the vpc
+    Value: !Ref InstanceSecurityGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-VPCSG
+  # Secret:
+  #   Description: RDS master username and password
+  #   Value: !Ref Secret
+  #   Export:
+  #     Name: !Sub ${AWS::StackName}-Secret
+  PublicSubnetA:
+    Description: Subnet AZ 0
+    Value: !Ref PublicSubnetA
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetA
+  PublicSubnetB:
+    Description: Subnet AZ 1
+    Value: !Ref PublicSubnetB
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnetB
+  # SubnetC:
+  #   Description: Subnet AZ 2
+  #   Value: !Ref SubnetC
+  #   Export:
+  #     Name: !Sub ${AWS::StackName}-SubnetC
