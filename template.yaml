@@ -43,6 +43,19 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref IGW
 
+  NATGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPC
+    Properties:
+      Domain: vpc
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: NATGatewayEIP
+    Properties:
+      AllocationId: !GetAtt NATGatewayEIP.AllocationId
+      SubnetId: !Ref LambdaSubnet
+
   DatabaseSubnetA:
     Type: "AWS::EC2::Subnet"
     Properties:
@@ -80,6 +93,18 @@ Resources:
     Properties:
       VpcId: !Ref VPC
 
+  NatRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref "VPC"
+
+  NatRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
+
   DatabaseSubnetARouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -95,7 +120,7 @@ Resources:
   LambdaSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref RouteTable
+      RouteTableId: !Ref NatRouteTable
       SubnetId: !Ref LambdaSubnet
 
   InternetRouteRule:
@@ -150,15 +175,15 @@ Resources:
         PasswordLength: 30
         ExcludeCharacters: '"@/\'
 
-  DBProxySecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Join ["-", [!Ref AWS::StackName, DBProxySecret]]
-      GenerateSecretString:
-        SecretStringTemplate: '{"username": "dbproxy"}'
-        GenerateStringKey: "password"
-        PasswordLength: 30
-        ExcludeCharacters: '"@/\'
+  # DBProxySecret:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties:
+  #     Name: !Join ["-", [!Ref AWS::StackName, DBProxySecret]]
+  #     GenerateSecretString:
+  #       SecretStringTemplate: '{"username": "dbproxy"}'
+  #       GenerateStringKey: "password"
+  #       PasswordLength: 30
+  #       ExcludeCharacters: '"@/\'
 
   RDSInstance:
     Type: AWS::RDS::DBInstance
@@ -233,7 +258,7 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource:
-                  - !Ref DBProxySecret
+                  - !Ref DBAdminSecret
               - Effect: Allow
                 Action: "kms:Decrypt"
                 Resource: "*"
@@ -248,7 +273,7 @@ Resources:
       Auth:
         - AuthScheme: SECRETS
           IAMAuth: DISABLED
-          SecretArn: !Ref DBProxySecret
+          SecretArn: !Ref DBAdminSecret
       DBProxyName: !Join ["-", [!Ref AWS::StackName, !Ref ProxyName]]
       EngineFamily: POSTGRESQL
       IdleClientTimeout: 600
@@ -263,6 +288,7 @@ Resources:
 
   ProxyTargetGroup:
     Type: AWS::RDS::DBProxyTargetGroup
+    DependsOn: RDSProxy
     Properties:
       DBProxyName: !Join ["-", [!Ref AWS::StackName, !Ref ProxyName]]
       DBInstanceIdentifiers:
@@ -272,7 +298,6 @@ Resources:
         MaxConnectionsPercent: 100
         MaxIdleConnectionsPercent: 12
         ConnectionBorrowTimeout: 20
-    DependsOn: RDSProxy
 
 Outputs:
   RDSInstance:
