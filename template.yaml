@@ -27,35 +27,50 @@ Parameters:
     Default: pharos-database-export-bucket
 
 Resources:
+  ## Create VPC for Pharos
   VPC:
     Type: "AWS::EC2::VPC"
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: Pharos-VPC
 
+  ## Internet Gateway
   IGW:
     Type: AWS::EC2::InternetGateway
 
+  ## Connect Internet Gateway to VPC
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref IGW
 
+  ## Reserve Elastic IP address for Nat Gateway
   NATGatewayEIP:
     Type: AWS::EC2::EIP
     DependsOn: VPC
     Properties:
       Domain: vpc
 
+  ## Nat Gateway to allow lambda functions to
+  ## to connect over the internet to resources
+  ## such as secrets manager, S3, Dynamodb, etc.
   NATGateway:
     Type: AWS::EC2::NatGateway
     DependsOn: NATGatewayEIP
     Properties:
       AllocationId: !GetAtt NATGatewayEIP.AllocationId
-      SubnetId: !Ref LambdaSubnet
+      SubnetId: !Ref LambdaPublicSubnet
 
+  ##
+  ## Subnets
+  ##
+
+  ## Database subnets
   DatabaseSubnetA:
     Type: "AWS::EC2::Subnet"
     Properties:
@@ -64,8 +79,11 @@ Resources:
         - !GetAZs
           Ref: "AWS::Region"
       VpcId: !Ref VPC
-      CidrBlock: 10.0.0.0/20
+      CidrBlock: 10.0.0.0/24
       MapPublicIpOnLaunch: True
+      Tags:
+        - Key: "Name"
+          Value: "DatabaseSubnetA"
 
   DatabaseSubnetB:
     Type: "AWS::EC2::Subnet"
@@ -75,61 +93,11 @@ Resources:
         - !GetAZs
           Ref: "AWS::Region"
       VpcId: !Ref VPC
-      CidrBlock: 10.0.16.0/20
+      CidrBlock: 10.0.16.0/24
       MapPublicIpOnLaunch: True
-
-  LambdaSubnet:
-    Type: "AWS::EC2::Subnet"
-    Properties:
-      AvailabilityZone: !Select
-        - 1
-        - !GetAZs
-          Ref: "AWS::Region"
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.32.0/20
-
-  RouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties:
-      VpcId: !Ref VPC
-
-  NatRouteTable:
-    Type: "AWS::EC2::RouteTable"
-    Properties:
-      VpcId: !Ref "VPC"
-
-  NatRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref NatRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway
-
-  DatabaseSubnetARouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref RouteTable
-      SubnetId: !Ref DatabaseSubnetA
-
-  DatabaseSubnetBRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref RouteTable
-      SubnetId: !Ref DatabaseSubnetB
-
-  LambdaSubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NatRouteTable
-      SubnetId: !Ref LambdaSubnet
-
-  InternetRouteRule:
-    Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
-    Properties:
-      RouteTableId: !Ref RouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref IGW
+      Tags:
+        - Key: "Name"
+          Value: "DatabaseSubnetB"
 
   SubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -139,6 +107,129 @@ Resources:
       SubnetIds:
         - !Ref DatabaseSubnetA
         - !Ref DatabaseSubnetB
+
+  ## The subnet which should point to the NAT
+  ## gateway so that these lambdas can use it
+  ## to call resources on the internet
+  LambdaSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.32.0/24
+      Tags:
+        - Key: "Name"
+          Value: "LambdaSubnet"
+
+  ## The subnet which should point to the IGW
+  ## so that the nat gateway can reach the
+  ## internet
+  LambdaPublicSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: "AWS::Region"
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.48.0/24
+      MapPublicIpOnLaunch: True
+      Tags:
+        - Key: "Name"
+          Value: "LambdaPublicSubnet"
+
+  ##
+  ## Route Tables
+  ##
+
+  ## This route table connects resources
+  ## which need to use the IGW to reach
+  ## and be reached by the internet, like the
+  ## RDS instance (for whitelisted direct access)
+  DatabaseRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: DatabaseRouteTable
+
+  ## Connect Database subnets to the main route table
+  DatabaseSubnetARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DatabaseRouteTable
+      SubnetId: !Ref DatabaseSubnetA
+
+  DatabaseSubnetBRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DatabaseRouteTable
+      SubnetId: !Ref DatabaseSubnetB
+
+  ## Route internet traffic from the Route
+  ## table to the internet through the IGW
+  DatabaseInternetRouteRule:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref DatabaseRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+  ## Route table for lambda functions
+  ## to access the NAT gateway
+  NatRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+        - Key: Name
+          Value: NatRouteTable
+
+  ## Route rule to direct traffic from
+  ## the lambda subnet to the nat gateway
+  NatRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
+
+  ## Connect lambda subnet to the Nat Route table
+  LambdaSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatRouteTable
+      SubnetId: !Ref LambdaSubnet
+
+  ## Route table to connect the nat gateway
+  ## to the internet gateway
+  NatToIGWRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+        - Key: Name
+          Value: NatToIGWRouteTable
+
+  NatToIGWAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NatToIGWRouteTable
+      SubnetId: !Ref LambdaPublicSubnet
+
+  ## Route rule to direct traffic from
+  ## the NAT gateway to the internet
+  NatToIGWRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatToIGWRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
 
   InstanceSecurityGroup:
     Type: "AWS::EC2::SecurityGroup"
