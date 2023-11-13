@@ -280,7 +280,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Snapshot
     Properties:
-      DBInstanceClass: db.t3.micro
+      DBInstanceClass: db.t3.small
       AllocatedStorage: "20"
       Engine: postgres
       EngineVersion: "15"
