@@ -1,0 +1,42 @@
+
+version: 2.1
+
+credentials: &credentials
+  - AWS Credentials
+
+orbs:
+  sam: circleci/aws-sam-serverless@4.0
+  aws-cli: circleci/aws-cli@3.1
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      # prod
+      - deploy:
+          config-env: prod
+          context: *credentials
+          filters:
+            branches:
+              only:
+                - prod
+
+jobs:
+  deploy:
+    executor: sam/default
+
+    parameters:
+      config-env:
+        type: string
+
+    steps:
+      - checkout
+
+      - sam/install
+      - run: sam build
+      - run: |
+          sam deploy \
+            --config-env <<parameters.config-env>> \
+            --template-file ./template.yaml \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset
