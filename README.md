@@ -8,6 +8,8 @@
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Prod    | [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod) |
 
+## 👩‍💻 Overview
+
 This repository contains the SAM ([AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/)) 
 template which orchistrates the Postgres RDS instance and networking containing all Pharos databases.
 
@@ -23,7 +25,9 @@ All changes to the database infrastructure must be done by committing to
 this repository; changes committed to this repository in the `prod` branch
 will be automatically applied to the production environment via SAM in CircleCI.
 
-## Overview Diagram
+## 🖥 Infrastructure Overview Diagram
 
 ![Overview diagram](https://github.com/viralemergence/pharos-database/blob/prod/img/pharos-database-highlevel.png)
+
+
 
