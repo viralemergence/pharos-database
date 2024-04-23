@@ -239,12 +239,15 @@ Resources:
       SecurityGroupEgress:
         - IpProtocol: "-1"
           CidrIp: "0.0.0.0/0"
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: !Ref Port
-          ToPort: !Ref Port
-          CidrIp: 181.164.177.48/32
-          Description: "WRZ de oro"
+
+      ## Example for whitelisting an
+      ## IP address for direct access
+      # SecurityGroupIngress:
+      #   - IpProtocol: tcp
+      #     FromPort: !Ref Port
+      #     ToPort: !Ref Port
+      #     CidrIp: xxx.xxx.xxx.xx/32
+      #     Description: "Ingress rule description"
 
   ## Allow resources within the InstanceSecurityGroup to
   ## connect to other resources within the same SG. This
