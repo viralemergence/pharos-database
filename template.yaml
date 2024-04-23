@@ -22,10 +22,6 @@ Parameters:
     Type: String
     Default: rds-policy
 
-  # ExportBucket:
-  #   Type: String
-  #   Default: pharos-database-export-bucket
-
 Resources:
   ## Create VPC for Pharos
   VPC:
@@ -317,16 +313,6 @@ Resources:
             Principal:
               Service:
                 - rds.amazonaws.com
-      # Policies:
-      #   - PolicyName:
-      #       !Join ["-", [!Ref AWS::StackName, !Ref RDSInstancePolicyName]]
-      #     PolicyDocument:
-      #       Statement:
-      #         - Effect: Allow
-      #           Action:
-      #             - S3:PutObject
-      #           Resource:
-      #             - !Sub arn:aws:s3:::${ExportBucket}/*
 
   RDSProxyRole:
     Type: AWS::IAM::Role
