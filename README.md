@@ -1,8 +1,7 @@
-## 🔗 Pharos
+## 🌎 Pharos
 
-This repository is part of the [Pharos project](https://pharos.viralemergence.org/).
-
-The Pharos project is split into three repositories:
+This repository is part of the [Pharos project](https://pharos.viralemergence.org/)
+which is split into three repositories:
 
 | Repository                                                             | Purpose                                            |
 | ---------------------------------------------------------------------- | -------------------------------------------------- |
@@ -10,7 +9,7 @@ The Pharos project is split into three repositories:
 | [`pharos-api`](https://github.com/viralemergence/pharos-api)           | API and deployment infrastructure                  |
 | [`pharos-database`](https://github.com/viralemergence/pharos-database) | SQL database and deployment infrastructure         |
 
-<h1 align="center">
+<h1 align="center" style="margin-top: 20px">
   Pharos Database
 </h1>
 
