@@ -6,11 +6,11 @@
 
 The Pharos project is split into three repositories:
 
-| Repository        | Purpose                                            | Link                                                                                           |
-| ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pharos-frontend` | Frontend application and deployment infrastructure | [github.com/viralemergence/pharos-frontend](https://github.com/viralemergence/pharos-frontend) |
-| `pharos-api`      | API and deployment infrastructure                  | [github.com/viralemergence/pharos-api](https://github.com/viralemergence/pharos-api)           |
-| `pharos-database` | SQL database and deployment infrastructure         | [github.com/viralemergence/pharos-database](https://github.com/viralemergence/pharos-database) |
+| Repository                                                             | Purpose                                            |
+| ---------------------------------------------------------------------- | -------------------------------------------------- |
+| [`pharos-frontend`](https://github.com/viralemergence/pharos-frontend) | Frontend application and deployment infrastructure |
+| [`pharos-api`](https://github.com/viralemergence/pharos-api)           | API and deployment infrastructure                  |
+| [`pharos-database`](https://github.com/viralemergence/pharos-database) | SQL database and deployment infrastructure         |
 
 ## 🚀 Deployment Status
 
@@ -21,8 +21,8 @@ The Pharos project is split into three repositories:
 ## 👩‍💻 Overview
 
 This repository is not necessary for local development. For local
-pharos database setup instructions see
-[github.com/viralemergence/pharos-api](https://github.com/viralemergence/pharos-api).
+pharos database setup instructions see the
+[`pharos-api`](https://github.com/viralemergence/pharos-api) repository.
 
 This repository contains the SAM ([AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/))
 template which orchistrates the Postgres RDS instance and networking containing all Pharos databases.
