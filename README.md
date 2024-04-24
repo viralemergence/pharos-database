@@ -9,11 +9,16 @@ which is split into three repositories:
 | [`pharos-api`](https://github.com/viralemergence/pharos-api)           | API and deployment infrastructure                  |
 | [`pharos-database`](https://github.com/viralemergence/pharos-database) | SQL database and deployment infrastructure         |
 
-<h1 align="center" style="margin-top: 20px">
+<br>
+<br>
+<br>
+<h1 align="center">
   Pharos Database
 </h1>
 
-## 🚀 Deployment Status
+## 🚀 CI/CD Deployment Status
+
+Click the badges below to see more information about builds on that branch.
 
 | Branch | CI/CD Status                                                                                                                                                                                                                                           |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
