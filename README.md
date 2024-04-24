@@ -18,11 +18,13 @@ which is split into three repositories:
 
 ## 🚀 CI/CD Deployment Status
 
-Click the badges below to see more information about builds on that branch.
+Click the badges below to view more information about builds on that branch.
+Changes pushed to any CI/CD branch will automatically be deployed to the
+corresponding environment.
 
 | Branch | CI/CD Status                                                                                                                                                                                                                                           |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Prod   | [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod) |
+| `prod` | [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod) |
 
 ## 👩‍💻 Overview
 
