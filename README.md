@@ -28,6 +28,7 @@ corresponding environment.
 | `prod` | [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod) |
 
 </br>
+
 ## 👩‍💻 Overview
 
 This repository is not necessary for local development. For local
@@ -50,6 +51,7 @@ this repository; changes committed to this repository in the `prod` branch
 will be automatically applied to the production environment via SAM in CircleCI.
 
 </br>
+
 ## 🏙️ Infrastructure Overview Diagram
 
 ![Overview diagram](https://github.com/viralemergence/pharos-database/blob/prod/img/pharos-database-highlevel.png)
