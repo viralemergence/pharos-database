@@ -3,15 +3,16 @@
 This repository is part of the [Pharos project](https://pharos.viralemergence.org/)
 which is split into three repositories:
 
-| Repository                                                             | Purpose                                            |
-| ---------------------------------------------------------------------- | -------------------------------------------------- |
-| [`pharos-frontend`](https://github.com/viralemergence/pharos-frontend) | Frontend application and deployment infrastructure |
-| [`pharos-api`](https://github.com/viralemergence/pharos-api)           | API and deployment infrastructure                  |
-| [`pharos-database`](https://github.com/viralemergence/pharos-database) | SQL database and deployment infrastructure         |
+| Repository                                                                       | Purpose                                            |
+| -------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [`pharos-frontend`](https://github.com/viralemergence/pharos-frontend)           | Frontend application and deployment infrastructure |
+| [`pharos-api`](https://github.com/viralemergence/pharos-api)                     | API and deployment infrastructure                  |
+| [`pharos-database`](https://github.com/viralemergence/pharos-database)           | SQL database and deployment infrastructure         |
+| [`pharos-documentation`](https://github.com/viralemergence/pharos-documentation) | Markdown files used to generate about pages        |
 
-<br>
-<br>
-<br>
+</br>
+</br>
+</br>
 <h1 align="center">
   Pharos Database
 </h1>
@@ -26,6 +27,7 @@ corresponding environment.
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `prod` | [![CircleCI](https://dl.circleci.com/status-badge/img/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/39PL8myokkHY7obZPJeFEC/Cr5VZbHxzAnKKxeDWwJBR7/tree/prod) |
 
+</br>
 ## 👩‍💻 Overview
 
 This repository is not necessary for local development. For local
@@ -47,6 +49,7 @@ All changes to the database infrastructure must be done by committing to
 this repository; changes committed to this repository in the `prod` branch
 will be automatically applied to the production environment via SAM in CircleCI.
 
+</br>
 ## 🏙️ Infrastructure Overview Diagram
 
 ![Overview diagram](https://github.com/viralemergence/pharos-database/blob/prod/img/pharos-database-highlevel.png)
